@@ -62,6 +62,3 @@ if pdf_file:
     
     else:
         print("❌ Nenhuma tabela detectada no PDF.")
-    
-# 📌 Remover o arquivo temporário
-os.remove(file_path)
