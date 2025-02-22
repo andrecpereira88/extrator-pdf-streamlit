@@ -24,7 +24,7 @@ if pdf_file:
     st.write("🔍 Extraindo tabelas... Aguarde.")
     tables = camelot.read_pdf(
         file_path, 
-        pages="all",  # ✅ Lê todas as páginas automaticamente
+        pages="all",  
         flavor="stream",
         table_areas=table_areas,
         columns=columns,
@@ -36,13 +36,12 @@ if pdf_file:
         df_list = [table.df for table in tables]
         df_final = pd.concat(df_list, ignore_index=True).drop_duplicates()
 
-        # 📌 Definir cabeçalho correto
-        df_final.columns = df_final.iloc[0]  
-        df_final = df_final[1:].reset_index(drop=True)  
+        # 📌 Garantir que o cabeçalho está correto
+        df_final.columns = df_final.iloc[0].fillna("Coluna_Desconhecida")  
+        df_final = df_final[1:].reset_index(drop=True)
 
-        # 📌 Definir índice (se existir)
-        if "C&V" in df_final.columns:
-            df_final.set_index("C&V", inplace=True)
+        # 📌 Converter tudo para string para evitar erros
+        df_final = df_final.astype(str).fillna("")
 
         # 📌 Exibir tabela no Streamlit
         st.write("📝 Tabela extraída:")
