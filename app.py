@@ -18,7 +18,6 @@ columns = ['65,105,165,230,290,350,385,453']  # Posicionamento das colunas
 # 📌 Lendo as tabelas do PDF
 print("🔍 Extraindo tabelas do PDF...")
 tables = camelot.read_pdf(
-    path, 
     pages='1-30',
     flavor='stream',
     table_areas=table_areas,
