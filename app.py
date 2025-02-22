@@ -34,10 +34,10 @@ if pdf_file:
     st.write("🔍 Extraindo tabelas...")
 
     try:
-        # 📌 Tenta extrair sem `table_areas` primeiro
+        # 📌 Extração SEM `table_areas` primeiro
         tables = camelot.read_pdf(
             file_path, 
-            pages="all",  # 🔄 Detecta automaticamente todas as páginas
+            pages="all",  
             flavor="stream",
             strip_text='.\n'
         )
@@ -63,9 +63,10 @@ if pdf_file:
             df_final = pd.concat(df_list, ignore_index=True)  
             df_final = df_final.drop_duplicates()
 
-            # 📌 Definir cabeçalho correto
+            # 📌 Definir cabeçalho correto e corrigir colunas duplicadas
             df_final.columns = df_final.iloc[0]  
             df_final = df_final[1:].reset_index(drop=True)  
+            df_final.columns = [f"{col}_{i}" if col == "" else col for i, col in enumerate(df_final.columns)]
 
             # 📌 Definir índice como "C&V" (se existir)
             if "C&V" in df_final.columns:
