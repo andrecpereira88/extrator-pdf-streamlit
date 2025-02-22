@@ -24,7 +24,7 @@ if pdf_file:
     st.write("🔍 Extraindo tabelas... Aguarde um momento.")
     tables = camelot.read_pdf(
         file_path, 
-        pages="1-30",
+        pages="all",
         flavor="stream",
         table_areas=table_areas,
         columns=columns,
