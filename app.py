@@ -31,5 +31,37 @@ if pdf_file:
         strip_text='.\n'
     )
 
-    # 📌 Remover o arquivo temporário
-    os.remove(file_path)
+if tables.n > 0:
+    # 📌 Criar um DataFrame e concatenar todas as tabelas extraídas
+    df_list = [table.df for table in tables]
+    df_final = pd.concat(df_list, ignore_index=True)  
+
+    # 📌 Remover duplicatas
+    df_final = df_final.drop_duplicates()
+
+    # 📌 Definir a linha correta como cabeçalho (índice)
+    header_row = 0  # 🔄 Se o cabeçalho real estiver em outra linha, ajuste aqui!
+    df_final.columns = df_final.iloc[header_row]  # Define a primeira linha como cabeçalho
+    df_final = df_final[1:].reset_index(drop=True)  # Remove a linha duplicada
+
+    # 📌 Definir índice como "C&V" (ou outra coluna chave)
+    df_final.set_index("C&V", inplace=True)
+
+    # 📌 Salvar os dados extraídos em um arquivo CSV
+    output_csv = "tabelas_processadas.csv"
+    df_final.to_csv(output_csv, index=True, encoding="utf-8")
+    print(f"📁 Arquivo CSV salvo em: {output_csv}")
+
+    # 📌 Exibir um exemplo do DataFrame processado
+    print("📝 Primeiras linhas da tabela após processamento:")
+    print(df_final.head())
+
+    # 📌 Plotar a detecção da tabela para conferir o posicionamento
+    #fig = camelot.plot(tables[0], kind="contour")  
+    #plt.show()
+
+else:
+    print("❌ Nenhuma tabela detectada no PDF.")
+    
+# 📌 Remover o arquivo temporário
+os.remove(file_path)
