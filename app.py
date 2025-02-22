@@ -2,60 +2,61 @@ import os
 import streamlit as st
 import camelot
 import pandas as pd
-from PyPDF2 import PdfReader
 
-# 📌 Configuração da página
+# 📌 Configuração do Streamlit
 st.title("📄 Extrator de Tabelas de PDF")
-st.write("Faça upload de um PDF e extraia as tabelas para CSV.")
+st.write("Faça upload de um PDF para extrair tabelas e salvar como CSV.")
 
-# 📌 Upload do arquivo pelo usuário
+# 📌 Upload do arquivo PDF
 pdf_file = st.file_uploader("📂 Escolha um arquivo PDF", type="pdf")
 
-# 📌 Definição da área da tabela e colunas (sem espaços extras)
-table_areas = ['65,558,500,298']  # Área exata da tabela
-columns = ['65,105,165,230,290,350,385,453']  # Posicionamento das colunas
+if pdf_file:
+    # 📌 Salvar temporariamente o arquivo
+    file_path = f"temp_{pdf_file.name}"
+    with open(file_path, "wb") as f:
+        f.write(pdf_file.read())
 
-# 📌 Lendo as tabelas do PDF
-print("🔍 Extraindo tabelas do PDF...")
-tables = camelot.read_pdf(
-    pages='1-30',
-    flavor='stream',
-    table_areas=table_areas,
-    columns=columns,
-    strip_text='.\n'
-)
+    # 📌 Definição da área da tabela e colunas
+    table_areas = ['65,558,500,298']
+    columns = ['65,105,165,230,290,350,385,453']
 
-# 📌 Verificar quantas tabelas foram encontradas
-print(f"✅ Total de tabelas detectadas: {tables.n}")
+    # 📌 Ler as tabelas do PDF
+    st.write("🔍 Extraindo tabelas... Aguarde.")
+    tables = camelot.read_pdf(
+        file_path, 
+        pages="all",  # ✅ Lê todas as páginas automaticamente
+        flavor="stream",
+        table_areas=table_areas,
+        columns=columns,
+        strip_text='.\n'
+    )
 
-if tables.n > 0:
-    # 📌 Criar um DataFrame e concatenar todas as tabelas extraídas
-    df_list = [table.df for table in tables]
-    df_final = pd.concat(df_list, ignore_index=True)  
+    # 📌 Verificar se há tabelas detectadas
+    if tables.n > 0:
+        df_list = [table.df for table in tables]
+        df_final = pd.concat(df_list, ignore_index=True).drop_duplicates()
 
-    # 📌 Remover duplicatas
-    df_final = df_final.drop_duplicates()
+        # 📌 Definir cabeçalho correto
+        df_final.columns = df_final.iloc[0]  
+        df_final = df_final[1:].reset_index(drop=True)  
 
-    # 📌 Definir a linha correta como cabeçalho (índice)
-    header_row = 0  # 🔄 Se o cabeçalho real estiver em outra linha, ajuste aqui!
-    df_final.columns = df_final.iloc[header_row]  # Define a primeira linha como cabeçalho
-    df_final = df_final[1:].reset_index(drop=True)  # Remove a linha duplicada
+        # 📌 Definir índice (se existir)
+        if "C&V" in df_final.columns:
+            df_final.set_index("C&V", inplace=True)
 
-    # 📌 Definir índice como "C&V" (ou outra coluna chave)
-    df_final.set_index("C&V", inplace=True)
+        # 📌 Exibir tabela no Streamlit
+        st.write("📝 Tabela extraída:")
+        st.dataframe(df_final)
 
-    # 📌 Salvar os dados extraídos em um arquivo CSV
-    output_csv = "tabelas_processadas.csv"
-    df_final.to_csv(output_csv, index=True, encoding="utf-8")
-    print(f"📁 Arquivo CSV salvo em: {output_csv}")
+        # 📌 Criar CSV para download
+        output_csv = "tabelas_processadas.csv"
+        df_final.to_csv(output_csv, index=True, encoding="utf-8")
 
-    # 📌 Exibir um exemplo do DataFrame processado
-    print("📝 Primeiras linhas da tabela após processamento:")
-    print(df_final.head())
+        with open(output_csv, "rb") as f:
+            st.download_button("📥 Baixar CSV", f, file_name="tabelas_processadas.csv")
 
-    # 📌 Plotar a detecção da tabela para conferir o posicionamento
-    #fig = camelot.plot(tables[0], kind="contour")  
-    #plt.show()
+    else:
+        st.write("❌ Nenhuma tabela detectada.")
 
-else:
-    print("❌ Nenhuma tabela detectada no PDF.")
+    # 📌 Remover o arquivo temporário
+    os.remove(file_path)
