@@ -31,29 +31,6 @@ if pdf_file:
         strip_text='.\n'
     )
 
-    # 📌 Verificar se há tabelas detectadas
-    if tables.n > 0:
-        df_list = [table.df for table in tables]
-        df_final = pd.concat(df_list, ignore_index=True).drop_duplicates()
-
-        # 📌 Garantir que o cabeçalho está correto
-        df_final.columns = df_final.iloc[0].fillna("Coluna_Desconhecida")  
-        df_final = df_final[1:].reset_index(drop=True)
-
-        # 📌 Converter tudo para string para evitar erros
-        df_final = df_final.astype(str).fillna("")
-
-        # 📌 Exibir tabela no Streamlit
-        st.write("📝 Tabela extraída:")
-        st.dataframe(df_final)
-
-        # 📌 Criar CSV para download
-        output_csv = "tabelas_processadas.csv"
-        df_final.to_csv(output_csv, index=True, encoding="utf-8")
-
-        with open(output_csv, "rb") as f:
-            st.download_button("📥 Baixar CSV", f, file_name="tabelas_processadas.csv")
-
     else:
         st.write("❌ Nenhuma tabela detectada.")
 
