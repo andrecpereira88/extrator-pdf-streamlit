@@ -11,9 +11,6 @@ st.write("Faça upload de um PDF e extraia as tabelas para CSV.")
 # 📌 Upload do arquivo pelo usuário
 pdf_file = st.file_uploader("📂 Escolha um arquivo PDF", type="pdf")
 
-# 📌 Obtendo o caminho absoluto
-path = os.path.abspath(file_name)
-
 # 📌 Definição da área da tabela e colunas (sem espaços extras)
 table_areas = ['65,558,500,298']  # Área exata da tabela
 columns = ['65,105,165,230,290,350,385,453']  # Posicionamento das colunas
