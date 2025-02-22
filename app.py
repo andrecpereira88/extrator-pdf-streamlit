@@ -1,7 +1,8 @@
 import os
+import streamlit as st
 import camelot
 import pandas as pd
-import streamlit as st
+from PyPDF2 import PdfReader
 
 # 📌 Configuração da página
 st.title("📄 Extrator de Tabelas de PDF")
@@ -16,52 +17,76 @@ if pdf_file:
     with open(file_path, "wb") as f:
         f.write(pdf_file.read())
 
-    # 📌 Definição da área da tabela e colunas
-    table_areas = ['65,558,500,298']
-    columns = ['65,105,165,230,290,350,385,453']
+    # 📌 Verificar se o PDF é válido
+    try:
+        with open(file_path, "rb") as f:
+            reader = PdfReader(f)
+            num_paginas = len(reader.pages)
 
-    # 📌 Ler as tabelas do PDF
-    st.write("🔍 Extraindo tabelas... Aguarde um momento.")
-    tables = camelot.read_pdf(
-        file_path, 
-        pages="all",
-        flavor="stream",
-        table_areas=table_areas,
-        columns=columns,
-        strip_text='.\n'
-    )
+        st.write(f"📄 O PDF tem {num_paginas} páginas.")
+        
+    except Exception as e:
+        st.error("❌ Erro ao abrir o PDF. Verifique se o arquivo não está corrompido.")
+        os.remove(file_path)
+        st.stop()
 
-    # 📌 Verificar se há tabelas detectadas
-    if tables.n > 0:
-        df_list = [table.df for table in tables]
-        df_final = pd.concat(df_list, ignore_index=True)  
+    # 📌 Tentativa de extração
+    st.write("🔍 Extraindo tabelas...")
 
-        # 📌 Remover duplicatas
-        df_final = df_final.drop_duplicates()
+    try:
+        # 📌 Tenta extrair sem `table_areas` primeiro
+        tables = camelot.read_pdf(
+            file_path, 
+            pages="all",  # 🔄 Detecta automaticamente todas as páginas
+            flavor="stream",
+            strip_text='.\n'
+        )
 
-        # 📌 Definir a linha correta como cabeçalho (índice)
-        header_row = 0
-        df_final.columns = df_final.iloc[header_row]  
-        df_final = df_final[1:].reset_index(drop=True)  
+        # 📌 Se nenhuma tabela for encontrada, tenta com `table_areas`
+        if tables.n == 0:
+            st.write("⚠ Nenhuma tabela detectada com configuração padrão. Tentando com `table_areas`...")
+            table_areas = ['65,558,500,298']
+            columns = ['65,105,165,230,290,350,385,453']
 
-        # 📌 Definir índice como "C&V" (ou outra coluna chave)
-        if "C&V" in df_final.columns:
-            df_final.set_index("C&V", inplace=True)
+            tables = camelot.read_pdf(
+                file_path, 
+                pages="all",
+                flavor="stream",
+                table_areas=table_areas,
+                columns=columns,
+                strip_text='.\n'
+            )
 
-        # 📌 Exibir DataFrame no Streamlit
-        st.write("📝 Tabela extraída:")
-        st.dataframe(df_final)
+        # 📌 Verificar se há tabelas detectadas
+        if tables.n > 0:
+            df_list = [table.df for table in tables]
+            df_final = pd.concat(df_list, ignore_index=True)  
+            df_final = df_final.drop_duplicates()
 
-        # 📌 Criar arquivo CSV para download
-        output_csv = "tabelas_processadas.csv"
-        df_final.to_csv(output_csv, index=True, encoding="utf-8")
+            # 📌 Definir cabeçalho correto
+            df_final.columns = df_final.iloc[0]  
+            df_final = df_final[1:].reset_index(drop=True)  
 
-        # 📌 Botão para baixar o CSV
-        with open(output_csv, "rb") as f:
-            st.download_button("📥 Baixar CSV", f, file_name="tabelas_processadas.csv")
+            # 📌 Definir índice como "C&V" (se existir)
+            if "C&V" in df_final.columns:
+                df_final.set_index("C&V", inplace=True)
 
-    else:
-        st.write("❌ Nenhuma tabela detectada.")
+            # 📌 Exibir DataFrame no Streamlit
+            st.write("📝 Tabela extraída:")
+            st.dataframe(df_final)
+
+            # 📌 Criar CSV para download
+            output_csv = "tabelas_processadas.csv"
+            df_final.to_csv(output_csv, index=True, encoding="utf-8")
+
+            with open(output_csv, "rb") as f:
+                st.download_button("📥 Baixar CSV", f, file_name="tabelas_processadas.csv")
+
+        else:
+            st.write("❌ Nenhuma tabela detectada.")
+
+    except Exception as e:
+        st.error(f"⚠️ Erro ao extrair tabelas: {e}")
 
     # 📌 Remover o arquivo temporário
     os.remove(file_path)
