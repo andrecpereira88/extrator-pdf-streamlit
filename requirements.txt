@@ -1,3 +1,4 @@
 streamlit
 camelot-py
 pandas
+PyPDF2
