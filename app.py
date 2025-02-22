@@ -31,8 +31,5 @@ if pdf_file:
         strip_text='.\n'
     )
 
-    else:
-        st.write("❌ Nenhuma tabela detectada.")
-
     # 📌 Remover o arquivo temporário
     os.remove(file_path)
